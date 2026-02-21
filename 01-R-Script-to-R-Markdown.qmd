@@ -15,6 +15,7 @@ library(lubridate)
 library(stringr)
 library(tidyr)
 library(ggplot2)
+library(hms)
 ```
 
 
@@ -135,3 +136,4 @@ knitr::kable(Insight_2)
 ## Reflection
 
 This assignment and being asked to reflect on my finished product made me realize this can be beneficial for my own thesis research. It is quite tiring to use SPSS to do all the manual work (for example cleaning data can be more simple the more I learn how to clean it with a few easy coding steps instead of manually having to go to each column and row when i have thousands of participants and a 20 minute survey). It also allows me to stay organized by being able to write what I did and what the code does. This way, I stay organized and do not have to go back and forth saving thousands of files and can have it all in one R markdown. I also notice that the graphs made here are absolutely beautiful and I can create it my own. I no longer have to rely on just one generic theme. Although it is not bad to have generic graphs, I do like to have my graphs to have a bit of personality :)
+
