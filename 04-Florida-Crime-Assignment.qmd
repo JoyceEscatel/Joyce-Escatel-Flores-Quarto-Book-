@@ -32,7 +32,6 @@ Remember that you must install and use library for each R package in order to fo
 ```{r}
 #|label: loading data
 Florida_Data<-read_xlsx("Florida County Crime Rates.xlsx")
-View(Florida_Data)
 ```
 
 ### Cleaning the data
@@ -233,3 +232,4 @@ AIC(m6)
 Dear Chief of the Florida Police Department,
 
 The best model for predicting crime rates is model 3 (Crime\~Urbanization), with the most influential predictor being Urbanization. 45% of the variance, the model explains. I recommend focusing on more urbanized areas to reduce crime rates because more urbanized areas experience higher rates of crime. One limitation of this analysis is that correlation does not equal causation. Just because there was a strongish correlation between crime and urbanization, does not mean that one causes the other. I would recommend into consideration my memo, but taking into consideration other factors that may contribute to high crime rates.
+
