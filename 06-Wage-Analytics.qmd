@@ -35,7 +35,6 @@ Here is the full report.
 ```{r}
 #| label: Loading data 
 WAD_Data<- Wage
-view(WAD_Data)
 ```
 
 ### Creating a new factor variable called **WageCategory**
@@ -241,3 +240,4 @@ auc(roc_obj)
 When we performed the t-test comparing wage to age, a significant result was shown, meaning that age was meaningfully related to wage. When an ANOVA test was conducted comparing wages and education, a significant result was shown, meaning that education was meaningfully related to wage. When a chi-square was performed comparing wages and jobclass, a significant result was shown, meaning that age was meaningfully related to wage.
 
 The following variables were significant predictors in the logistic regression model: Age, Education, and Race. The model did not perform well with unseen data because accuracy was only 29% compared to 51% rate with no prior information, meaning that the model was not as accurate as we expected. The wage group the model predicted best was high wages. If I were to repeat this analysis, I would add marital status and remove age.
+
