@@ -1,0 +1,236 @@
+---
+title: "Assignment 2: Law Firm Analysis"
+---
+
+## Introduction
+
+Hello! We are working as data scientists for a law firm analyzing NYC violation data. The NYC violation data can be found [here](https://data.cityofnewyork.us/d/nc67-uf89). The firm who hired us for this task wants to uncover hidden patterns in the data to inform their marketing strategy.
+
+So far we have examined patterns by day of the week, time of day, and violation type. The firm wants us to do further investigation by exploring three questions:
+
+1.  Do certain agencies issue higher payments?
+
+2.  Do drivers from different states (NY, NJ, CT) pay more?
+
+3.  Do certain counties tend to have higher payment amounts?
+
+The packages we will be using for this section include: **tidyverse, httr, mosaic, supernova, jsonlite, AICmodavg, tidyr, dplyr, ggplot2, and supernova.**
+```{r}
+#| label: loading packages
+library(tidyverse)
+library(httr)
+library(mosaic)
+library(supernova)
+library(jsonlite)
+library(AICcmodavg)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(supernova)
+```
+
+
+::: callout-important
+Remember that you must install and use library for each R package in order to follow along!
+:::
+
+## Data
+
+In this section, I ran some code to load the data for the analysis.
+
+```{r}
+#| label: Loading the data 
+endpoint <-"https://data.cityofnewyork.us/resource/nc67-uf89.json"
+resp<-GET(endpoint, query=list(
+  "$limit"=99999,
+  "$order"="issue_date DESC"
+))
+camera<- fromJSON(content(resp, as="text"), flatten=TRUE)
+view(camera)
+```
+
+## Data cleaning 
+In this step, we will now clean the county column to replace any abbreviations with the full county names
+
+```{r}
+#| label: Cleaning the county column
+camera<-camera %>%
+  mutate(county=case_when(
+    county=="Q" ~"Queens County",
+    county=="Qns" ~"Queens County",
+    county=="QN" ~"Queens County",
+    county=="K"~"Kings County",
+    county=="BK"~"Kings County",
+    county=="Kings"~"Kings County",
+    county=="NY"~"New York County",
+    county=="BX"~"Bronx County",
+    county=="Bronx"~"Bronx County",
+    county=="R"~"Richmond County",
+    county=="RICH"~"Richmond County",
+    county=="ST"~"Staten Island County",
+     county=="MN"~"Monroe County",
+    TRUE~county
+  ))
+```
+```{r}
+camera<- camera%>% 
+  mutate(across(
+    c("payment_amount"), 
+    ~as.numeric(.)
+  ))
+```
+
+## Question 1: Do certain agencies issue higher payments?
+
+### Descriptive Statistics
+
+```{r}
+#| label: Descriptive statistics to see if certain agencies issue higher payments
+
+Agency_Statistics<- favstats(payment_amount ~ issuing_agency, data = camera) %>% arrange(desc(mean))
+
+Agency_Statistics
+```
+
+### Inferential Statistics
+
+```{r}
+#| label: ANOVA statistical method being run for question 1
+anova_model_IA<-aov(payment_amount ~ issuing_agency, data = camera)
+
+summary(anova_model_IA)
+
+supernova(anova_model_IA)
+```
+
+### Interpretation
+
+In the ANOVA we just conducted, the variance explained by the sum of squares using the formula SSerror/SStotal gives us 0.99. This sum of squares does account for a large amount of variance. The proportion of variance using the formula SSmodel/SStotal is 0.002, which does not explain the variation portion of the data. The F value is 8.004 with a p value of .0000 which gives us a significant results. There are differences between agencies issuing higher payments.
+
+### Visualization
+
+```{r}
+#| label: Boxplot showing agencies and their issuing payments
+#| fig-cap: fig-This boxplot shows agencies and their issuing payments 
+
+ggplot(camera, aes(x=issuing_agency, y=payment_amount)) + 
+  geom_boxplot(fill = "blue", color = "black") +
+  coord_flip() +
+  labs(
+    title ="Agencies issuing payments",
+    x="Agency",
+    y="payment") +
+  theme(plot.title = element_text(size=20, family="serif", face="bold"),
+        axis.title = element_text(size=15, family ="serif"),
+           axis.text = element_text(size = 10, family = "serif"))
+```
+
+### Interpretation
+
+The ANOVA performed showed that agency is statistically significant indicator for payment amount. Differences between the agencies are shown. The law firm might consider using the agency in their marketing strategy if they choose to look at agencies who have high payment amount.
+
+
+
+## Question 2: Do drivers from different states (NY, NJ, CT) pay more? 
+
+### Descriptive Statistics
+
+```{r}
+#| label: Descriptive statistics to see if drivers from different states pay more 
+camera<- camera %>%
+  filter(state %in% c("NY","NJ","CT"))
+
+Drivers_Statistics<- favstats(payment_amount ~ state, data = camera) %>% arrange(desc(mean))
+
+Drivers_Statistics
+```
+
+### Inferential Statistics
+
+```{r}
+#| label:  ANOVA statistical method being run for question 2
+anova_model_Drivers<-aov(payment_amount ~ state, data = camera)
+
+summary(anova_model_Drivers)
+
+supernova(anova_model_Drivers)
+```
+
+### Interpretation
+
+In the ANOVA we just conducted, the variance explained by the sum of squares using the formula SSerror/SStotal gives us 0.999. This sum of squares does account for a large amount of variance. The proportion of variance using the formula SSmodel/SStotal is 0.0007, which does not explain the variation portion of the data.  The F value is 18.552 with a p value of .0000 which gives us a significant results. Drivers that come from different states do pay more.
+
+### Visualization
+
+```{r}
+#| label: Boxplot showing drivers payment by state
+#| fig-cap: fig-This boxplot shows the payments drives make by state
+
+ggplot(camera, aes(x=state, y=payment_amount)) + 
+  geom_boxplot(fill = "orange", color = "black") +
+  coord_flip() +
+  labs(
+    title ="Drivers payment by state",
+    x="State",
+    y="payment") +
+  theme(plot.title = element_text(size=20, family="serif", face="bold"),
+        axis.title = element_text(size=15, family ="serif"),
+           axis.text = element_text(size = 10, family = "serif"))
+```
+
+### Interpretation 
+
+The ANOVA performed showed that Drivers from different states do pay higher, specifically those in New Jersey. State is statistically significant indicator for payment amount. Differences between the states payment amount are shown. The law firm should not really use this variable as it limits them to only certain states.
+
+## Question 3: Do certain counties tend to have higher payment amounts?
+
+### Descriptive Statistics
+
+```{r}
+#| label: Descriptive statistics to see if certain counties tend to have higher payment amounts
+camera<- camera %>%
+  filter(!is.na(county))
+
+County_Statistics<- favstats(payment_amount ~ county, data = camera) %>% arrange(desc(mean))
+
+County_Statistics
+```
+
+### Inferential Statistics
+
+```{r}
+#| label:  ANOVA statistical method being run for question 3
+anova_model_County<-aov(payment_amount ~ county, data = camera)
+
+summary(anova_model_County)
+
+supernova(anova_model_County)
+```
+
+### Interpretation
+In the ANOVA we just conducted, the variance explained by the sum of squares using the formula SSerror/SStotal gives us 0.977. This sum of squares does account for a large amount of variance. The proportion of variance using the formula SSmodel/SStotal is 0.02, which does not explain for a large variation portion of the data.  The F value is 212.589 with a p value of .0000 which gives us a significant results. Some counties do tend to have higher payment amounts.
+
+### Visualization
+```{r}
+#| label: Boxplot showing the county payment amounts
+#| fig-cap: fig-This boxplot shows the amount that countys charge
+ggplot(camera, aes(x=county, y=payment_amount)) + 
+  geom_boxplot(fill = "green", color = "black") +
+  coord_flip() +
+  labs(
+    title ="County Payment Amounts",
+    x="County",
+    y="payment") +
+  theme(plot.title = element_text(size=20, family="serif", face="bold"),
+        axis.title = element_text(size=15, family ="serif"),
+           axis.text = element_text(size = 10, family = "serif"))
+```
+
+### Interpretation 
+
+The ANOVA performed showed that different counties tend to have higher payment amounts, specifically Richmond County. The county variable is a statistically significant indicator for payment amount. Differences between the county payment amount are shown. The law firm should use this variable to investigate further which counties have the highest payment and use in their marketing strategies. 
+
+## Final Recommendation
+
+Out of the three variables we have explored today, I would recommend that the law firm further explores with county. Although all three variables were significant, county had the higher F value and largest portion of variance explained. 
+

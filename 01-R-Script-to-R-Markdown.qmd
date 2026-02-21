@@ -1,0 +1,137 @@
+---
+title: "Assignment 1: R Script to R Markdown"
+---
+
+Hello! I am creating my assignment 3 R Script into R Markdown. I had fun creating this even though it took a while to figure out why R Markdown was not working at first.
+
+In this assignment, we took our R script that we worked on and made it into an R markdown. In this assignment we were focused on cleaning the data, looking at insights of the data, and creating graphs for the insights.
+
+The libraries we are using for this assignment are **readr, tidyverse, lubridate, stringr, tidyr, and ggplot2.**
+```{r}
+#| label: loading packages
+library(readr)
+library(tidyverse)
+library(lubridate)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+```
+
+
+::: callout-important
+Remember that you must install and use library for each R package in order to follow along!
+:::
+
+## Loading NYPD Shootings Data Set
+
+In this section, I ran some code to load the data set for NYC Shootings.
+
+```{r}
+#| label: Loading Data
+library(readr)
+shooting_data <- read_csv("NYPD_Shooting_Incident_Data__Historic__20250910.csv")
+view(shooting_data)
+```
+
+## Data Cleaning
+
+The first piece of code I removed rows from the column titled "perp_age_group" that had missing data. What this code did was remove the rows that had "n/a" in the column.
+
+The next piece of code, I added a new column titled "time_of_day". This new variable allows us to know when the shooting occurred. Was it during the night, morning, or afternoon? **Now we Know!**
+
+The last piece of code in the R chunk, I simply did not like that the column "boro" was all capitalized. What I did was write code to make all the column rows lowercase.
+
+```{r}
+#| label: removing rows and add new column
+
+shooting_data<- shooting_data %>% filter(!is.na(PERP_AGE_GROUP))
+
+shooting_data<-shooting_data %>%
+  mutate(
+    OCCUR_TIME= as_hms(OCCUR_TIME),
+    time_of_day=case_when(
+      hour(OCCUR_TIME)>=0 & hour(OCCUR_TIME)<12 ~"morning", 
+      hour(OCCUR_TIME)>12 & hour(OCCUR_TIME)<20 ~"afternoon", 
+      TRUE ~"night"
+    ))
+
+shooting_data<- shooting_data %>% mutate(BORO = case_when(
+  BORO== "BROOKLYN"~"brooklyn",
+  BORO=="MANHATTAN"~"manhattan",
+  BORO== "STATEN ISLAND"~"staten island",
+  BORO== "BRONX"~"bronx",
+  BORO=="QUEENS"~"queens"
+))
+
+head(shooting_data)
+```
+
+## Insights
+
+The first chunk of code is an insights of how many shootings occurred during each time of day. We see here that our output, it shows that there was a total of 8,177 morning shootings, 6378 night shootings, and 5895 afternoon shootings.
+
+The second chunk of code is an insight of how many shootings occurred during each time of day per borough in order from greatest to lowest. We see here that number one is Brooklyn in the morning with a total of 2,786 shootings and number 15 is staten island in the night with a total of 173 shootings.
+
+```{r}
+#| label: Insight of how many shootings occurred during each time of day and during each time of day per borough
+
+Insight_1<-shooting_data %>% 
+  count(time_of_day) %>%
+  arrange(desc(n))
+Insight_1
+
+Insight_2<-shooting_data %>% 
+  count(time_of_day, BORO) %>% 
+  arrange(desc(n))
+Insight_2
+```
+
+## Graphs and Table
+
+The first chunk of code created a plot for the first insight. (*See above section*) What I did was call to use the NYPD data, make the x axis time of day and fill it with time of day. I thought flipping it is cool, so I did that as well. I put the title, x axis, and y axis titles and made sure to change its size, font, and make it *bold*.
+
+The second chunk of code created a plot for the second insight. (*See above section*) What I did was use facet_wrap to show different graphs for each borough. I thought this was more neat and visually appealing. I did the same thing as the first graph and it gave me this pretty output :)
+
+For the table, I simply created a table for the second insight!
+
+```{r}
+#| label: fig-shootings by time of day
+#| fig-cap: fig-This plot shows shoots that occur by time of day
+
+ggplot(shooting_data, aes(x=time_of_day, fill = time_of_day)) +
+geom_bar(fill = "red", color = "black") +
+  coord_flip() +
+  labs(
+    title ="Shootings by Time of Day",
+    x="Time of Day",
+    y="Number of Shootings") +
+  theme(plot.title = element_text(size=30, family="serif", face="bold"),
+           axis.title = element_text(size=15, family ="serif"),
+           axis.text = element_text(size = 10, family = "serif"))
+```
+
+```{r}
+#| label: fig-shootings by time of day by borough 
+#| fig-cap: fig-This plot shows shootings that occur by time of day by borough in NYC
+
+ggplot(shooting_data, aes(x=time_of_day, fill = BORO)) +
+  geom_bar()+
+  labs(title="Shootings that Occurred per Borough by Time of Day",
+       x="Time of shootings",
+       y="Number of shootings",
+       fill="BORO")+
+     theme(plot.title = element_text(size=20, family="serif", face="bold"),
+           axis.title = element_text(size=15, family ="serif"),
+           axis.text = element_text(size = 8, family = "serif")) +
+  facet_wrap(~ BORO)
+```
+
+```{r}
+#| label: tbl-table showing insight 2's of shootings that occur by time of day by borough in NYC
+#| 
+knitr::kable(Insight_2)
+```
+
+## Reflection
+
+This assignment and being asked to reflect on my finished product made me realize this can be beneficial for my own thesis research. It is quite tiring to use SPSS to do all the manual work (for example cleaning data can be more simple the more I learn how to clean it with a few easy coding steps instead of manually having to go to each column and row when i have thousands of participants and a 20 minute survey). It also allows me to stay organized by being able to write what I did and what the code does. This way, I stay organized and do not have to go back and forth saving thousands of files and can have it all in one R markdown. I also notice that the graphs made here are absolutely beautiful and I can create it my own. I no longer have to rely on just one generic theme. Although it is not bad to have generic graphs, I do like to have my graphs to have a bit of personality :)

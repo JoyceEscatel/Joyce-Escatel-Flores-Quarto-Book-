@@ -1,0 +1,6 @@
+# Preface {.unnumbered}
+
+This is a Quarto book I have created to showcase all my assignments
+
+To learn more about Quarto books visit <https://quarto.org/docs/books>.
+

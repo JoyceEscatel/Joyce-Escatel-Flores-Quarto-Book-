@@ -1,0 +1,243 @@
+---
+title: "Assignment 6: Wage Analytics"
+---
+
+## Introduction
+
+The wage Analytics Division (WAD) has hired me as their new data scientist. My mission is to determine whether demographic and employment characteristics can be used to predict whether a worker earn a high or low wage. I will create a binary wage category, explore statistical relationships between variables, and build a logistic regression model capable of predicting wage level using demographic, job, and health-related information. I will help the company understand which characteristics are associated with higher earnings and evaluate how well a predictive model performs on unseen data.
+
+For this assignment, the packages we will be using include: **ISLR2, mosaic, tibble, dplyr, stringr, stats, rcompanion, caTools, pROC, and caret.**
+```{r}
+#| label: loading packages
+library(ISLR2)
+library(mosaic)
+library(tibble)
+library(dplyr)
+library(stringr)
+library(stats)
+library(rcompanion)
+library(caTools)
+library(pROC)
+library(caret)
+```
+
+
+::: callout-important
+Remember that you must install and use library for each R package in order to follow along!
+:::
+
+Here is the full report.
+
+## Step 1: Create the WageCategory Variable
+
+### Load the data
+
+```{r}
+#| label: Loading data 
+WAD_Data<- Wage
+view(WAD_Data)
+```
+
+### Creating a new factor variable called **WageCategory**
+
+```{r}
+#| label: creating new variable
+WAD_Data<-WAD_Data %>%
+  mutate(
+    WageCategory = case_when(
+      wage>median(wage) ~ "High",
+      wage<median(wage) ~ "Low"
+    )
+  )
+view(WAD_Data)
+
+WAD_Data$WageCategory<-as.factor(WAD_Data$WageCategory)
+```
+
+## Step 2: Data Cleaning
+
+### Removing the **numeric prefixes** so only the category name remains in each column
+
+```{r}
+#| label: cleaning data by removing numeric prefixes
+WAD_Data<- WAD_Data %>%
+  mutate(maritl=str_remove_all(maritl, "\\d+\\.?\\d*"))
+
+WAD_Data<- WAD_Data %>%
+  mutate(race=str_remove_all(race, "\\d+\\.?\\d*"))
+
+WAD_Data<- WAD_Data %>%
+  mutate(maritl=str_remove_all(maritl, "\\d+\\.?\\d*"))
+
+WAD_Data<- WAD_Data %>%
+  mutate(education=str_remove_all(education, "\\d+\\.?\\d*"))
+
+WAD_Data<- WAD_Data %>%
+  mutate(region=str_remove_all(region, "\\d+\\.?\\d*"))
+
+WAD_Data<- WAD_Data %>%
+  mutate(jobclass=str_remove_all(jobclass, "\\d+\\.?\\d*"))
+
+WAD_Data<- WAD_Data %>%
+  mutate(health=str_remove_all(health, "\\d+\\.?\\d*"))
+
+WAD_Data<- WAD_Data %>%
+  mutate(health_ins=str_remove_all(health_ins, "\\d+\\.?\\d*"))
+```
+
+## Step 3: Classical Statistical Tests
+
+### T-test
+
+I will be running a t-test comparing age between High and Low wage earners
+
+```{r}
+#| label: t-test analysis to compare age between high and low wages 
+t_test<- t.test(age ~ WageCategory, data = WAD_Data)
+t_test
+```
+
+-   Mean age of high wage earners: 44.69
+
+-   Mean age of low wage earners: 40.01
+
+-   T-statistic: 11.14
+
+-   df: 2724.2
+
+-   p-value: 2.2e-16
+
+-   A t-test was conducted to compare age between high and low wage earners. Results shown a significant difference in age between high and low wage earners, meaning age differs between wage categories.
+
+### ANOVA Test
+
+I will be running an ANOVA comparing wages and education
+
+```{r}
+#| label: ANOVA statistical method to compare wages and education 
+ANOVA<- aov(wage ~ education, data = WAD_Data)
+summary(ANOVA)
+```
+
+-   F-statistic: 229.8
+
+-   df1 & df2: 4, 2995
+
+-   P-Value: 0 (significant)
+
+-   An ANOVA was conducted to compare wages to education categories. Results showed a significant result of wages on education, meaning wages do differ across education categories.
+
+## Chi-Square Test
+
+I will be running a chi-square test to compare wages and job class
+
+```{r}
+#| label: chi-square test to compare wages and job class
+freq_table<- table(WAD_Data$WageCategory,WAD_Data$jobclass)
+freq_table
+
+chi_square_test<- chisq.test(freq_table)
+chi_square_test
+
+cramerV(freq_table)
+```
+
+-   χ²: 97.07
+
+-   df: 1
+
+-   P-value: \<2.2e-16
+
+-   Cramer's V: 0.18
+
+-   In our contingency table, high wage workers look like they are more likely to be in the information job class than the industry job class, while low wage workers look likely are more likely to be in the industry job class than the information job class.
+
+## Step 4: Logistic Regression Model
+
+### Train/Test Split
+
+```{r}
+#| label: Train and test for logistic regression model analysis
+set.seed(12)
+sample<- sample.split(WAD_Data$WageCategory, SplitRatio = 0.7)
+
+training_data <- subset(WAD_Data, sample == TRUE)
+
+test_data <- subset(WAD_Data, sample == FALSE)
+```
+
+### Logistic Regression Model
+
+```{r}
+#| label: creating the logistic regression model
+train_model <- glm(WageCategory ~ age + race + education + jobclass,
+                   family = "binomial", data = training_data)
+
+summary(train_model)
+```
+
+Age was a significant predictor of the wage category along with education, and race. Job class seemed to not be a significant predictor of the wage category. Together, demographic characteristics show significant predictors of the wage category.
+
+### Odds ratios
+
+```{r}
+#| label: showing the odd ratios of our training model
+odd_ratios<-exp(coef(train_model))
+odd_ratios
+```
+
+## Step 5: Model Evaluation on Test Data
+
+### Predicted Probabilities
+
+```{r}
+#| label: evaluating model for predicted probabilities
+test_data$pred_prob<- predict(train_model, newdata = test_data, type = "response")
+view(test_data)
+```
+
+### Predicted Classes
+
+```{r}
+#| label: evaluating model for predicted classes
+test_data$pred_class <- ifelse(test_data$pred_prob > 0.5, "High", "Low") %>% as.factor()
+view(test_data)
+```
+
+### Confusion Matrix
+
+```{r}
+#| label: conducting a confusion matrix
+conf_matrix <-confusionMatrix(test_data$pred_class, test_data$WageCategory, positive = "High")
+conf_matrix
+```
+
+### ROC Curve + AUC value
+
+```{r}
+#| label: creating a ROC curve and AUC value
+roc_obj <- roc(test_data$WageCategory, test_data$pred_prob, levels = c("High", "Low"))
+plot(roc_obj, col = "orange", lwd = 2,
+     main = "ROC Curve – Logistic Regression")
+auc(roc_obj)
+```
+
+-   Accuracy: 0.29 (accuracy is 29%)
+
+-   Sensitivity: 0.27 (sensitivity is 27%)
+
+-   Specificity: 0.31 (specificity is 31%)
+
+-   Balanced Accuracy: 0.29 (balance accuracy is 29%)
+
+-   The ROC curve has an AUC of 0.77, indicating model has a good ability to discriminate although accuracy is pretty low (29%)
+
+-   Compared to the no information rate, the model performs worse than random guessing.
+
+-   The model doesnt identify high earners well due to the sensitivity being low (27%) which means is misses high wage earners.
+
+## Step 6: Final Interpretation
+
+When we performed the t-test comparing wage to age, a significant result was shown, meaning that age was meaningfully related to wage. When an ANOVA test was conducted comparing wages and education, a significant result was shown, meaning that education was meaningfully related to wage. When a chi-square was performed comparing wages and jobclass, a significant result was shown, meaning that age was meaningfully related to wage.
+
+The following variables were significant predictors in the logistic regression model: Age, Education, and Race. The model did not perform well with unseen data because accuracy was only 29% compared to 51% rate with no prior information, meaning that the model was not as accurate as we expected. The wage group the model predicted best was high wages. If I were to repeat this analysis, I would add marital status and remove age.

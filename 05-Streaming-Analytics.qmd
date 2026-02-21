@@ -1,0 +1,195 @@
+---
+title: "Assignment 5: Streaming Analytics: Understanding Platform Popularity Across Age Groups"
+---
+
+## Introduction
+
+The Streaming Analytics Division (SAD) has hired me as their new data analyst. My mission is to uncover whether age group influences people's preferred streaming platform.
+
+SAD wants to know if certain platforms appeal more to specific age demographics. This analysis will help guide targeted marketing, promotional strategies, and content investment decisions that align with audience preferences.
+
+For this assignment, the packages we will be using include: **readxl, skimr, dplyr, ggplot2, ggthemes, pheatmap, and rcompanion.**
+```{r}
+#| label: loading packages
+library(readxl)
+library(skimr)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+library(pheatmap)
+library(rcompanion)
+```
+
+
+::: callout-important
+Remember that you must install and use library for each R package in order to follow along!
+:::
+
+The following is a document of my analysis.
+
+## Step 1: Data Preparation
+
+### Loading and exploring the data
+
+```{r}
+#| label: loading the data
+streaming_data<-read_xlsx("Streaming Services and Age.xlsx")
+
+View(streaming_data)
+
+str(streaming_data)
+skim(streaming_data)
+```
+
+### Finding total counts for Age Category and Platform Preference
+
+```{r}
+#| label: gathering total counts for age and platform
+count_age_cat<-table(streaming_data$AgeCat)
+count_age_cat
+
+count_platform<-table(streaming_data$Platform)
+count_platform
+```
+
+First code shows us the total counts for **Age Category** separately.
+
+Second code shows us the total counts for **Platform Preference** seperately.
+
+### Creating a contigency table showing how many people from each age group prefer each platform.
+
+```{r}
+#| label: creating a contingency table
+contingency_table<-table(streaming_data$AgeCat,streaming_data$Platform)
+contingency_table
+```
+
+## Step 2: Visualization
+
+### Stack Bar chart: Showing proportions of platform preferences within each age group
+
+```{r}
+#| label: Stack bar chart for platform preference by each age group 
+#| fig-cap: fig-Plot graph showing platform preferences by each age group
+stacked_bar<- ggplot(streaming_data, aes(x = Platform, fill = AgeCat)) +
+  geom_bar(position = "fill") + 
+  labs(
+    title = "Proportion of Platform Preferences Within Each Age Group",
+    y = "Age Group",
+    x = "Platform"
+  ) +
+  theme_solarized_2()
+
+stacked_bar
+```
+
+### Clustered Bar Chart: Showing the counts side by side for each platform across age groups.
+
+```{r}
+#| label: Cluster bar showing counts side by side for each platform across age groups
+#| fig-cap: fig-Cluster bar showing the counts for each platform perference by age groups
+clustered_bar<- ggplot(streaming_data, aes(Platform, fill = AgeCat)) +
+  geom_bar(position = "dodge") +
+  geom_text(
+    stat = "count",
+    aes(label=after_stat(count)),
+    position = position_dodge(width = 0.8),
+    vjust=-0.2,
+    size = 3) +
+  labs(
+    title = "Counts For Each Platform Preference Across Age Groups",
+    x="Platform",
+    y="Counts of People"
+  )+
+  theme_solarized_2()
+
+clustered_bar
+ 
+```
+
+## Running a Chi-Square Test of Independence
+
+```{r}
+#| label: Running a chi-square analysis
+chi_square_test<-chisq.test(contingency_table)
+chi_square_test
+```
+
+-   Chi Square Statistic: 68.044
+
+-   Degrees of Freedom: 8
+
+-   P-Value: 1.203e-11
+
+For our test, we find that our chi-square test of independence reveals a statistically signficant relationship between age and platform preference.
+
+## Step 4: Observed, Expected, and Residual Values
+
+### We will be examining observed counts, expected counts, and residuals from our chi-square test.
+
+```{r}
+#| label: Chi-Square extras
+chi_square_test$observed
+chi_square_test$expected
+chi_square_test$residuals
+```
+
+### Identify and discuss patterns that stand out
+
+-   Amazon: There was less than expected 18-25 year old's (expected: 18 vs observed: 4, residuals: -3.30) and less than expected 26-40 year old's (expected: 18, observed: 11, residuals:-1.65) who preferred Amazon as their streaming platform. There was more than expected 41+ year old participants (expected: 18, observed: 39, residuals: +4.95) who preferred Amazon as their streaming platform.
+
+-   Disney+: There was a bit more than expected 18-25 year old's (expected 20.33, observed: 22, residuals: +0.37) and a bit more than expected 26-40 year old's (expected: 20.33, observed, 25, residuals: +1.03) who preferred Disney+ as their streaming platform. There was a bit less than expected 41+ year old participants (expected: 20.33, observed: 14, residuals: -1.40) who preferred Disney+ as their streaming platform.
+
+-   Hulu: There was a bit more than expected 18-25 year old's (expected: 15.33 vs observed: 23, residuals: +1.96) and a bit more than expected 26-40 year old's (expected: 15.33, observed: 16, residuals:-0.17) who preferred Hulu as their streaming platform. There was less than expected 41+ year old participants (expected: 15.33, observed: 7, residuals: -2.13) who preferred Amazon as their streaming platform.
+
+-   Netflix: There was a more than expected 18-25 year old's (expected: 37 vs observed: 47, residuals: +1.64) and more than expected 26-40 year old's (expected: 37, observed: 41, residuals:+0.66) who preferred Netflix as their streaming platform. There was less than expected 41+ year old participants (expected: 37, observed: 23, residuals: -2.30) who preferred Netflix as their streaming platform.
+
+-   Other: There was less than expected 18-25 year old's (expected: 9.33 vs observed: 4, residuals: -1.74) and a less than expected 26-40 year old's (expected: 9.33, observed: 7, residuals:-0.76) who preferred Other as their streaming platform. There was more than expected 41+ year old participants (expected: 9.33, observed: 17, residuals: +2.51) who preferred Amazon as their streaming platform.
+
+Overall, 18-25 year old's preferred Netflix, and Hulu more than expected, while they preferred less Amazon than expected. 26-40 year old's preferred Disney+ and a bit of Netflix more than expected, while they preferred less Amazon and other streaming platforms. 41+ year old's preferred Amazon more than expected, while they preferred less Netflix and Hulu.
+
+## Step 5: Contributions to the Chi-Square Statistic
+
+### Cell Contributions
+
+```{r}
+#| label: cell contributions to the chi-square analysis
+cell_contributions<-((chi_square_test$observed-chi_square_test$expected)^2)/chi_square_test$expected
+cell_contributions
+```
+
+### Percent Contributions
+
+```{r}
+#| label: percent contributions to the chi-square analysis
+percent_contributions<- cell_contributions / chi_square_test$statistic *100
+percent_contributions
+```
+
+### Pheatmap displaying the percentage contribution of each cell to the total chi-square statistic value.
+
+```{r}
+#| label: Pheatmap showing percentage contribute of each cell 
+#| fig-cap: fig-Pheatmap displaying the percentage contribution of each cell to the total chi-square statistic value.
+ pheatmap(percent_contributions,
+           display_numbers = TRUE,
+           cluster_rows = FALSE,
+           cluster_cols = FALSE,
+           main = "% Contribution to Chi-Square Statistic")
+
+```
+
+The cell that contribute the most to the overall chi-square statistic is 41+ participant within the Amazon streaming platform. What this suggest about viewing habits among different age groups is that 41+ year old participants prefer Amazon as their streaming platform while 18-25 year old participants and 26-40 year old participants viewing habits are spread out, which suggests that they might not have a preference.
+
+## Step 6: Effect Size
+
+```{r}
+#| label: effect size of the analysis
+cramerV(contingency_table)
+```
+
+Effect size is 0.33 and it is moderate meaning there is a moderate effect size between Age and platform. This shows that there is an influence of certain age groups showing platform preferences.
+
+## Step 7: Final Interpretation
+
+The Chi-Square test revealed a significant relationship between age and platform preference, χ²(8, N = 300) = 68.044, p = 1.203e-1. The largest contribution came 41+ year old participants and Amazon platform cells. Cramer’s V = 0.3368, indicates a moderate association. This suggests that older adults prefer Amazon as their streaming platform while younger adults (18-25 and 26-40) prefer Netflix. This can help streaming platform tailor their streaming platform to certain age demographics.

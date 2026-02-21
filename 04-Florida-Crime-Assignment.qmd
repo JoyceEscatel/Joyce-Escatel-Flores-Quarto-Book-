@@ -1,0 +1,235 @@
+---
+title: "Assignment 4: Florida Assignment"
+---
+
+## Introduction
+
+The Florida Police Department has hired me as their new data analyst. The mission is to uncover what socioeconomic factors are most strongly associated with rising crime rates across Florida counties. The Florida Police Department is particularly interested in whether income, education, or urbanization play the largest role in explaining differences in crime rates.
+
+For this assignment, the packages we will be using include: **readxl, tidyverse, dplyr, stringr, skimr, ggplot2, patchwork, Hmisc, ggcorrplot, and broom.**
+```{r}
+#|label: loading packages
+library(readxl)
+library(tidyverse)
+library(dplyr)
+library(skimr)
+library(ggplot2)
+library(patchwork)
+library(Hmisc)
+library(ggcorrplot)
+library(broom)
+```
+
+
+::: callout-important
+Remember that you must install and use library for each R package in order to follow along!
+:::
+
+## Step 1: Loading and Preparing the data
+
+### Loading the data
+
+```{r}
+#|label: loading data
+Florida_Data<-read_xlsx("Florida County Crime Rates.xlsx")
+View(Florida_Data)
+```
+
+### Cleaning the data
+
+We will be renaming the columns to: Crime, Income, HighSchoolGrad, and UrbanPop and making sure all county names are formatted so that only the first letter is capitalized.
+
+```{r}
+#| label: renaming columns and formatting county names
+Florida_Data<- Florida_Data %>%
+  rename(
+    Crime= C,
+    Income= I,
+    HighSchoolGrad= HS,
+    UrbanPop=U
+  )
+
+Florida_Data<-Florida_Data %>%
+  mutate(County=str_to_title(County))
+
+Florida_Data
+```
+
+### Inspect and summarize data set
+
+Next we will inspect and summarize the dataset
+
+```{r}
+#| label: inspect and summarize data
+str(Florida_Data)
+skim(Florida_Data)
+```
+
+## Step 2: Exploratory Data Analysis
+
+We will now compute basic descriptive statistics.
+
+```{r}
+#| label: Descriptive statistics confused to explore data
+summary(Florida_Data)
+```
+
+Using this simple code, we get the minimum, median, mean, and maximum of each column.
+
+-   For Crime: Mean= 52.4, Median= 52, Range= 0-128
+
+-   For Income: Mean= 24.51, Median= 24.60, Range= 15.40-35.60
+
+-   For HighSchoolGrad: Mean= 54.50, Median= 69, Range= 54.50-84.90
+
+-   For UrbanPop: Mean= 49.56, Median= 44.60, Range= 0-99.60
+
+Next we will create three scatterplots **below**
+
+### Visual 1: Income and Crime
+
+```{r}
+#| label: Scatter plot made to visualize income and crime
+#| fig-cap: fig-Plot graph showing income by crime since visualizing helps us see the trend
+Visual_1<- ggplot(Florida_Data, aes(x=Income, y=Crime))+
+  geom_point(size=2.5)+ 
+  geom_smooth(method = "lm", se=FALSE) +
+  labs(
+    title = "Income and Crime",
+    x="Income",
+    y="Crime Rate"
+  )
+Visual_1
+```
+
+As income increases, crime rate increases.
+
+### Visual 2: Education and crime
+
+```{r}
+#| label: Scatter plot made to visualize education and crime
+#| fig-cap: fig-Plot graph showing education by crime since visualizing helps us see the trend
+Visual_2<- ggplot(Florida_Data, aes(x=HighSchoolGrad, y=Crime))+
+  geom_point(size=2.5)+ 
+  geom_smooth(method = "lm", se=FALSE) +
+  labs(
+    title = "Education and Crime",
+    x="Education",
+    y="Crime Rate"
+  )
+Visual_2
+```
+
+As education increases, crime rate increases.
+
+### Visual 3: Urbanization and Crime
+
+```{r}
+#| label: Scatter plot made to visualize urbanization and crime
+#| fig-cap: fig-Plot graph showing urbanization by crime since visualizing helps us see the trend
+Visual_3<- ggplot(Florida_Data, aes(x=UrbanPop, y=Crime))+
+  geom_point(size=2.5)+ 
+  geom_smooth(method = "lm", se=FALSE) +
+  labs(
+    title = "Urbanization and Crime",
+    x="Urbanization",
+    y="Crime Rate"
+  )
+Visual_3
+```
+
+As urbanization increases, crime rate increases.
+
+### Lets look at all of our visuals side by side
+
+```{r}
+#| label: all graphs together
+#| fig-cap: fig-All graphs made all together
+Visual_1+Visual_2+Visual_3
+```
+
+We can see that in our three scatter plots, we have positive relationships.
+
+## Step 3: Correlation Analysis
+
+We will be investigating which factors are most strongly correlated with crime.
+
+### Computing Correlation Matrix
+
+```{r}
+#| label: computing a correlation analysis to investigate which factors are correlated with crime
+Numeric_Florida_Data<- Florida_Data %>%
+  select(Crime, Income, HighSchoolGrad, UrbanPop)
+view(Numeric_Florida_Data)
+
+Correlation_Matrix<-rcorr(as.matrix(Numeric_Florida_Data))
+Correlation_Matrix
+```
+
+Interpreting each relationship:
+
+-   Income x Crime: 0.43. As income increases, crime increases (Positive-Weak)
+
+-   Education x Crime: 0.47. As Education increases, crime increases. (Positive-Weak)
+
+-   Urbanization x Crime: 0.68. As urbanization increases, crime increases. (Positive-Strongish)
+
+The variable that shows the strongest relationship with Crime is UrbanPop(Urbanization).
+
+## Step 4: Building Regression Models
+
+### Building simple regression models
+
+```{r}
+#| label: Building 3 simple regression models 
+m1<-lm(Crime ~ Income, data=Numeric_Florida_Data)
+summary(m1)
+AIC(m1)
+
+m2<-lm(Crime ~ HighSchoolGrad, data=Numeric_Florida_Data)
+summary(m2)
+AIC(m2)
+
+m3<-lm(Crime ~ UrbanPop, data=Numeric_Florida_Data)
+summary(m3)
+AIC(m3)
+```
+
+### Building Multiple Regression Models
+
+```{r}
+#| label: Building multiple regression models
+m4<-lm(Crime ~ Income + HighSchoolGrad, data=Numeric_Florida_Data)
+summary(m4)
+AIC(m4)
+
+m5<-lm(Crime ~ Income + UrbanPop, data=Numeric_Florida_Data)
+summary(m5)
+AIC(m5)
+
+m6<-lm(Crime ~ Income + HighSchoolGrad + UrbanPop, data=Numeric_Florida_Data)
+summary(m6)
+AIC(m6)
+```
+
+### Comparing all models based on R squared, adjusted R squared, and AIC.
+
+-   m1: Model 1 has a R square of 0.19, adjusted r square of 0.18, and an AIC of 628.60. 18% of the variance the model explains.
+
+-   m2: Model 2 has a R square of 0.22, adjusted r square of 0.20, and an AIC of 626.09. 20% of the variance the model explains.
+
+-   m3: Model 3 has a R square of 0.46, adjusted r square of 0.45, and an AIC of 601.43. 45% of the variance the model explains.
+
+-   m4: Model 4 has a R square of 0.23, adjusted r square of 0.20, and an AIC of 627.15. 20% of the variance the model explains.
+
+-   m5: Model 5 has a R square of 0.47, adjusted r square of 0.45, and an AIC of 602.43. 45% of the variance the model explains.
+
+-   m6: Model 6 has a R square of 0.47, adjusted r square of 0.45, and an AIC of 603.68. 45% of the variance the model explains.
+
+-   Model 3, 5, and 6 has an adjusted r square of 0.45 but different AIC. Model 3 AIC is 601.43, Model 5 AIC is 602.43, and Model 6 AIC is 603.68. Model 3 has the lowest AIC, therfore Model 3 (Crime and urbanization) is the model that best balances accuracy and simplicity.
+
+## Step 5: Findings
+
+Dear Chief of the Florida Police Department,
+
+The best model for predicting crime rates is model 3 (Crime\~Urbanization), with the most influential predictor being Urbanization. 45% of the variance, the model explains. I recommend focusing on more urbanized areas to reduce crime rates because more urbanized areas experience higher rates of crime. One limitation of this analysis is that correlation does not equal causation. Just because there was a strongish correlation between crime and urbanization, does not mean that one causes the other. I would recommend into consideration my memo, but taking into consideration other factors that may contribute to high crime rates.

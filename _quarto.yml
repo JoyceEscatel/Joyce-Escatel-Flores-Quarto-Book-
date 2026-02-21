@@ -1,0 +1,27 @@
+project:
+  type: book
+  
+book:
+  title: "Joyce Escatel-Flores Quarto Book"
+  author: "Joyce Escatel-Flores"
+  date: "2/19/2026"
+  chapters:
+    - index.qmd
+    - 01-R-Script-to-R-Markdown.qmd
+    - 02-Law-Firm-Analysis.qmd
+    - 03-Midterm.qmd
+    - 04-Florida-Crime-Assignment.qmd
+    - 05-Streaming-Analytics.qmd
+    - 06-Wage-Analytics.qmd
+
+bibliography: references.bib
+
+format:
+  html:
+    theme: cosmo
+     
+  pdf:
+    documentclass: scrreprt
+
+editor: visual
+

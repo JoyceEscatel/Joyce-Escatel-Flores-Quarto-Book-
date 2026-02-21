@@ -1,0 +1,422 @@
+---
+title: "Assignment 3: Midterm"
+---
+
+## Dr. Walker's Lab Report
+
+I have just ran an experiment that measures the effect of exercise on sleep habits. I was able to measure participants average hours of sleep before and after the experiment. I was also able to measure participants sleep efficiency at the end of the experiment. Since the experiment is over, I needed to identify which, if any, of the exercise methods best impacts sleep.
+
+The packages we will be using for this assignment include: **readxl, dplyr, tibble, tidyverse, mosaic, ggplot2, supernova, and stats.**
+```{r}
+#| label: loading packages
+library(readxl)
+library(dplyr)
+library(tibble)
+library(tidyverse)
+library(mosaic)
+library(ggplot2)
+library(supernova)
+library(stats)
+```
+
+
+::: callout-important
+Remember that you must install and use library for each R package in order to follow along!
+:::
+
+Here is my report.
+
+## Data
+
+In this section, I ran some code to load the two data sets for the analysis **below**. I am using glimpse and head to preview my two data sets to ensure they correctly have been loaded.
+
+```{r}
+#| label: Loading data sets
+participant_info_midterm <- read_excel("participant_info_midterm.xlsx")
+glimpse(participant_info_midterm)
+
+sleep_data_midterm <- read_excel("sleep_data_midterm.xlsx")
+glimpse(sleep_data_midterm)
+head(sleep_data_midterm)
+```
+
+## Data Cleaning
+
+In this section, we will be cleaning the data. The column names thankfully do not have to be cleaned.
+
+In this piece of code **below**, we are standardizing the column titled Exercise_Group.
+
+```{r}
+#| label: cleaning the data by standardizing a column
+
+participant_info_midterm<-participant_info_midterm %>%
+  mutate(Exercise_Group =case_when(
+    Exercise_Group=="NONE" ~"None",
+    Exercise_Group=="Nonee" ~ "None",
+    Exercise_Group=="N"~"None",
+    Exercise_Group=="C"~"Cardio",
+    Exercise_Group=="WEIGHTS"~"Weights",
+    Exercise_Group=="WEIGHTZ"~"Weights",
+    Exercise_Group=="WEIGHTSSS"~"Weights",
+    Exercise_Group=="CW"~"Cardio+Weights",
+    Exercise_Group=="C+W"~"Cardio+Weights",
+    TRUE~Exercise_Group
+  ))
+```
+
+In this piece of code **below**, we are standardizing the column titled Sex.
+
+```{r}
+#| label: Standaizing the sex column
+participant_info_midterm<-participant_info_midterm %>%
+  mutate(Sex=case_when(
+    Sex=="Malee"~"Male",
+    Sex=="MALE"~"Male",
+    Sex=="M"~"Male",
+    Sex=="Mal"~"Male",
+    Sex=="Femalee"~"Female",
+    Sex=="F"~"Female",
+    TRUE~Sex
+  ))
+```
+
+Since our data is now all clean, the last step was to merge our two data sets.
+
+We can now see that our data is cleaned and merged **below**.
+
+```{r}
+#| label: Merging data sets
+Data_Midterm<- merge(participant_info_midterm, sleep_data_midterm, by="ID")
+
+knitr::kable(Data_Midterm)
+```
+
+## Create Derived Variables
+
+We now want to Create a column titled Sleep_Difference with Post_Sleep - Pre_Sleep.
+
+First we got to check if Post_Sleep and Pre_Sleep columns are numeric **below**.
+
+```{r}
+#| label: checking if columns are numeric
+is.numeric(Data_Midterm$Post_Sleep) 
+is.numeric(Data_Midterm$Pre_Sleep)
+```
+
+Post_Sleep IS numeric but Pre_Sleep is NOT numeric. Before we use code to turn it into numeric, we first have to clean the column further since it has letters and numbers. I did this by separating the letters and numbers into separate columns **below**.
+
+```{r}
+#| label: cleaning column before turning it numeric
+Data_Midterm<- Data_Midterm %>%
+  separate(
+    col= Pre_Sleep,
+    into= c("Pre_Sleep_Letters", "Pre_Sleep"),
+    sep= "-"
+  )
+```
+
+I then turned the Pre_Sleep column into numeric and deleted Pre_Sleep_Letters column. You can see here that the Pre_Sleep_Letters column is gone and we are left with Pre_Sleep Column cleaned up. I also checked if Pre_Sleep column is numeric and it is. All of this can be seen **below**.
+
+```{r}
+#| label: turning column numeric
+Data_Midterm<- Data_Midterm%>% 
+  mutate(across(
+    c("Pre_Sleep"), 
+    ~as.numeric(.)
+  ))
+
+Data_Midterm<- Data_Midterm %>% 
+  select(-"Pre_Sleep_Letters")
+
+is.numeric(Data_Midterm$Pre_Sleep)
+
+head(Data_Midterm)
+```
+
+Now we can create our new column titled Sleep_Difference.
+
+Furthermore, I identified that there was 14 participants with no Sleep_Difference scores. I removed them from our data leaving us with 86 participants which you can view **below**.
+
+```{r}
+#| label: removing participants with no sleep difference scores
+Data_Midterm<-Data_Midterm%>%
+  mutate(Sleep_Difference=Post_Sleep-Pre_Sleep)
+
+Data_Midterm$Sleep_Difference %>% is.na() %>% which()
+
+Data_Midterm<- Data_Midterm %>% filter(!is.na(Sleep_Difference))
+
+knitr::kable(Data_Midterm)
+```
+
+Next we want to create a new column titled AgeGroup2 using via case_when. You can see **below** that we have successfully created this new column.
+
+```{r}
+#| label: Creating a new column for age group based on younger and older adult
+Data_Midterm<-Data_Midterm%>%
+  mutate(AgeGroup2=case_when(
+    Age <35~"Younger_Adult",
+    Age >=35~"Older_Adult"
+  ))
+
+head(Data_Midterm)
+```
+
+## Descriptive Statistics
+
+**Below** we are exploring the descriptive statistics for Sleep_Difference.
+
+```{r}
+#| label: descriptive statistics to explore sleep difference column
+Sleep_Diff_Stats<- favstats(~Sleep_Difference, data = Data_Midterm) 
+Sleep_Diff_Stats
+```
+
+For Sleep_Difference column, the statistics is as follows:
+
+-   Mean: 0.68
+
+-   SD: 0.66
+
+-   Min: -1.1
+
+-   Max: 2.1
+
+**Below** we are exploring the descriptive statistics for Sleep_Efficiency.
+
+```{r}
+#| label:  descriptive statistics to explore sleep efficiency column
+Sleep_Effic_Stats<-favstats(~Sleep_Efficiency, data = Data_Midterm)
+Sleep_Effic_Stats
+```
+
+For Sleep_Efficiency column, the statistics is as follows:
+
+-   Mean: 83.78
+
+-   SD: 5.98
+
+-   Min: 71.7
+
+-   Max: 101.5
+
+**Below** we explore the pairwise means of Sleep_Difference by Exercise_Group.
+
+```{r}
+#| label: exploring pairwise means of sleep difference and exercise group columns
+Sleep_Diff_by_Exercise<-favstats(Sleep_Difference~Exercise_Group, data = Data_Midterm)
+Sleep_Diff_by_Exercise
+```
+
+For pairwise means, the means are as follows:
+
+-   Cardio: 1.14
+
+-   Cardio+Weights: 0.86
+
+-   None: 0.048
+
+-   Weights: 0.67
+
+**Below** we explore the pairwise means of Sleep_Efficiency by Exercise_Group.
+
+```{r}
+#| label: exploring pariwise means of sleep efficiency and exercise group columns
+Sleep_Effic_by_Exercise<-favstats(Sleep_Efficiency~Exercise_Group, data = Data_Midterm)
+Sleep_Effic_by_Exercise
+```
+
+For pairwise means, the means are as follows:
+
+-   Cardio: 85.45
+
+-   Cardio+Weights: 86.83
+
+-   None: 81.07
+
+-   Weights: 81.46
+
+## Visualizations (Plots)
+
+I proceeded to create plots to be able to visualize things better.
+
+```{r}
+#| label: Boxplot created to look at sleep difference by exercise group
+#| fig-cap: fig-Boxplot showing exercise group by sleep difference in order to look at it visually
+ggplot(Data_Midterm, aes(x=Exercise_Group, y=Sleep_Difference))+
+  geom_boxplot(fill="orange", color="black")+
+  coord_flip() +
+  labs(
+    title = "Exercise Group by Sleep Difference",
+    x="Exercise Type",
+    y="Sleep Difference")+
+theme(plot.title = element_text(size=20, family="serif", face="bold"),
+             axis.title = element_text(size=15, family ="serif"),
+             axis.text = element_text(size = 10, family = "serif"))
+```
+
+**Above** a box plot was created to look at sleep difference by exercise group.
+
+```{r}
+#| label: Boxplot created to look at sleep efficiency 
+#| fig-cap: fig-Boxplot showing sleep efficiency by exercise group in order to look at it visually
+ggplot(Data_Midterm, aes(x=Exercise_Group, y=Sleep_Efficiency))+
+  geom_boxplot(fill="orange", color="black")+
+  coord_flip() +
+  labs(
+    title = "Exercise Group by Sleep Efficiency",
+    x="Exercise Type",
+    y="Sleep Efficiency")+
+  theme(plot.title = element_text(size=20, family="serif", face="bold"),
+        axis.title = element_text(size=15, family ="serif"),
+        axis.text = element_text(size = 10, family = "serif"))
+```
+
+**Above** a box plot was created to look at sleep efficiency by exercise group.
+
+```{r}
+#| label: Boxplot created to look at sleep difference by sleep efficiency 
+#| fig-cap: fig-Graph with a trend line showing sleep difference by sleep efficiency in order to look at it visually
+ggplot(Data_Midterm, aes(x=Sleep_Difference, y=Sleep_Efficiency))+
+  geom_point(alpha=1, size=2)+
+  labs(
+    title = "Sleep Difference by Sleep Efficiency",
+    x="Sleep Difference",
+    y="Sleep Efficiency"
+  )+
+  geom_smooth(method = "lm", se = FALSE, color="orange")+
+  theme(plot.title = element_text(size=23, family="serif", face="bold"),
+        axis.title = element_text(size=15, family ="serif"),
+        axis.text = element_text(size = 10, family = "serif"))
+```
+
+**Above** a graph was created with a trend line to look at sleep difference by sleep efficiency.
+
+## T-Test's
+
+I went ahead and conducted two t-tests.
+
+**Below** I conducted a two sample t-test for sleep difference by sex (male vs female).
+
+```{r}
+#| label: T-test statastical method conducted  for sleep difference by sex
+SleepDiffbySex_Ttest<-t.test(Sleep_Difference ~ Sex, data = Data_Midterm)
+SleepDiffbySex_Ttest
+```
+
+-   Mean in Female Group: 0.78
+
+-   Mean in Male Group: 0.55
+
+-   *P* value: 0.12
+
+-   The difference between males and females in their sleep differences is not significant.
+
+**Below** I conducted a two sample t-test for sleep difference by age group (young vs older adults).
+
+```{r}
+#| label: T-Test statistical method conducted for sleep difference by age group
+SleepDiffbyAge_Ttest<-t.test(Sleep_Difference ~ AgeGroup2, data = Data_Midterm)
+SleepDiffbyAge_Ttest
+```
+
+-   Mean in Older Adult Group: 0.74
+
+-   Mean in Younger Adult Group: 0.63
+
+-   *P* value: 0.43
+
+-   The difference between younger adult and older adult participants in their sleep difference is not significant.
+
+## ANOVA'S
+
+I went ahead and conducted two ANOVA's along with posthoc comparisons if the ANOVA was significant.
+
+**Below** I conducted an ANOVA for sleep difference by exercise group and posthoc comparisons.
+
+```{r}
+#| label: ANOVA statistical method conducted for sleep difference by exercise group 
+SleepDiffbyExercise_ANOVA<-aov(Sleep_Difference ~ Exercise_Group, data = Data_Midterm)
+
+summary(SleepDiffbyExercise_ANOVA)
+
+supernova(SleepDiffbyExercise_ANOVA)
+```
+
+Important Information for **above**:
+
+-   F = 15.717
+
+-   df = 85
+
+-   *p* = .0000
+
+-   PRE = .37
+
+-   effect size = Small
+
+```{r}
+#| label: Tukey test conducted for posthoc for ANOVA about sleep difference by exercise group
+TukeyHSD(SleepDiffbyExercise_ANOVA)
+```
+
+TukeyHSD for **above** code:
+
+TukeyHSD:
+
+-   No exercise is statistically different to Cardio (P=0.0000). Cardio has a greater mean difference of 1.09 than no exercise, meaning Cardio has a higher sleep difference.
+
+-   Weights is statistically different to Cardio (P=0.03). Cardio has a greater mean difference of .47 than weights, meaning Cardio has a higher sleep difference.
+
+-   No exercise is statistically different to Cardio + Weights (P= 0.00002). Cardio+weights has a greater mean difference of .81 than no exercise, meaning Cardio+weights has a higher sleep difference.
+
+-   Weights is statistically different to no exercise (P=0.001). Weights has a greater mean difference of 0.62 than no exercise, meaning weights has a higher sleep difference.
+
+-   Overall, Cardio has the best sleep difference due to having the largest mean difference (1.09) and smallest *p* value (p=0.000).
+
+**Below** I conducted an ANOVA for sleep efficiency by exercise group and posthoc comparisons.
+
+```{r}
+#| label: ANOVA statistical method conducted for sleep efficiency by exercise group
+SleepEfficbyExercise_ANOVA<-aov(Sleep_Efficiency ~ Exercise_Group, data = Data_Midterm)
+
+summary(SleepEfficbyExercise_ANOVA)
+
+supernova(SleepEfficbyExercise_ANOVA)
+
+```
+
+Important Information for **above**:
+
+-   F = 5.93
+
+-   df = 85
+
+-   *p* = .001
+
+-   PRE = .18
+
+-   Effect size = Very Small
+
+```{r}
+#| label: Tukey test conducted ANOVA about sleep efficiency by exercise group
+TukeyHSD(SleepEfficbyExercise_ANOVA)
+```
+
+TukeyHSD for **above** code:
+
+-   No exercise is not statistically different to Cardio but trending to significance (p= 0.057). Cardio has a greater mean difference of 4.38 than no exercise, meaning Cardio has a higher sleep efficiency.
+
+-   No exercise is statistically significant to Cardio+Weights (p=0.005). Cardio+Weights has a greater mean difference of 5.76 than no exercise, meaning Cardio+Weights has a higher sleep efficiency.
+
+-   Weights is statistically significant to Cardio+Weights (p=0.009). Cardio+Weights has a greater mean difference of 5.38 than weights, meaning Cardio+Weights has a higher sleep efficiency.
+
+-   Overall Cardio+Weights has the best sleep efficiency due to having a greater mean (5.76 and 5.38) and smallest p value (0.005 and 0.009)
+
+## Synthesis & Recommendation
+
+If I had to pick one exercise regimen to recommend to improve overall sleep, I would recommend Weights+Cardio. Regardless of sex and age, Weights+Cardio was significant in improving sleep difference before and after exercise than no exercise (P= 0.00002) and improving sleep efficiency after this exercise rather than no exercise (p=0.005). Although Cardio had a smaller p value (P=0.0000) when compared to no exercise when it comes to sleep difference before and after exercise type, it was only trending to significance for sleep efficiency (p= 0.057). Cardio did improve sleep difference before and after more than Cardio+Weights, but did not significantly improve sleep efficiency. Visually, in graph 1 and 2, you can see that Cardio+Weights are close to each other, but Cardio+Weights exceeds Cardio in sleep efficiency. It is important to consider overall sleep, and therefore, I recommend Weights+Cardio.
+
+## Reflection
+
+The most challenging part of this report was separating the column pre_sleep to have only the numbers for my analysis. I think I panicked, but after taking time to think and read over notes, I was able to figure it out and successfully run my code. I also felt that interpreting the pairwise comparisons was challenging as it has been a while doing posthoc, but I managed to finish! Overall, I felt confident in the rest of the task because I have been practicing my coding skills and always take my time when I do any assignment. It is like I relearn when I do assignments, which helps tremendously.
