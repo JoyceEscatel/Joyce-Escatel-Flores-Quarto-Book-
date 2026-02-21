@@ -35,7 +35,6 @@ The following is a document of my analysis.
 #| label: loading the data
 streaming_data<-read_xlsx("Streaming Services and Age.xlsx")
 
-View(streaming_data)
 
 str(streaming_data)
 skim(streaming_data)
@@ -193,3 +192,4 @@ Effect size is 0.33 and it is moderate meaning there is a moderate effect size b
 ## Step 7: Final Interpretation
 
 The Chi-Square test revealed a significant relationship between age and platform preference, χ²(8, N = 300) = 68.044, p = 1.203e-1. The largest contribution came 41+ year old participants and Amazon platform cells. Cramer’s V = 0.3368, indicates a moderate association. This suggests that older adults prefer Amazon as their streaming platform while younger adults (18-25 and 26-40) prefer Netflix. This can help streaming platform tailor their streaming platform to certain age demographics.
+
